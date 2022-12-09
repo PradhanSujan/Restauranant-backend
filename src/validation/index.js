@@ -35,3 +35,26 @@ exports.userRegistrationValidation = (req, res, next) => {
   }
   next();
 };
+
+
+exports.userResestPasswordValidation = (req,res,next)=>{
+  req
+  .check("password", "Please provide password")
+  .notEmpty()
+  .isLength({
+    min: 8,
+    max: 16,
+  })
+  .withMessage(
+    "Password must be atleast 8 characters long and upto 16 character"
+  );
+
+  const errors = req.validationErrors();
+  if (errors) {
+    const [showError] = errors.map((err) => err.msg);
+    return res.status(400).json({
+      error: showError,
+    });
+  }
+  next();
+}

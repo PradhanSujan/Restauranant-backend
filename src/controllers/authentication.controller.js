@@ -147,6 +147,96 @@ exports.userSignOut = (req, res) => {
   }
 };
 
+// forget password
+exports.userForgetPassword = async (req, res) => {
+  const user = await User.findOne({ email: req.body.email });
+  if (!user) {
+    return res.status(400).json({ error: "Email not registered" });
+  }
+  let token = new Token({
+    token: crypto.randomBytes(16).toString("hex"),
+    userId: user._id,
+  });
+  token = await token.save();
+  if (!token) {
+    return res.status(400).json({ error: "Something went wrong" });
+  }
+  sendEmail({
+    from: "no-reply@restro.com",
+    to: user.email,
+    subject: "Password Reset Link",
+    text: `Hello, \n \n Please reset your password by copying the below link :\n\n 
+  http:\/\/${req.headers.host}\/api\/resetpassword\/${token.token}`,
+  });
+  res.json({ message: "Password reset link has been sent to your email" });
+};
+
+// reset password
+exports.userResetPassword = async (req, res) => {
+  // first find the valid or matching token
+  let token = await Token.findOne({
+    token: req.params.token,
+  });
+  if (!token) {
+    return res.status(400).json({
+      error: "Invalid token or may have been expired",
+    });
+  }
+  // find valid user
+  let user = await User.findOne({
+    email: req.body.email,
+    _id: token.userId,
+  });
+  if (!user) {
+    return res
+      .status(400)
+      .json({ error: "Unable to find a valid user for this token" });
+  }
+  user.password = req.body.password;
+  user = await user.save();
+  if (!user) {
+    return res.status(400).json({ error: "Failed to reset password" });
+  }
+  res.json({ message: "Password has been reset successfully" });
+};
+
+// resend veriofication link
+exports.userResendVerification = async (req, res) => {
+  // first find the registered user
+  const user = await User.findOne({ email: req.body.email });
+  if (!user) {
+    return res
+      .status(400)
+      .json({ error: "Sorry the email you provided is not in our system" });
+  }
+  if (user.isVerified) {
+    return res
+      .status(400)
+      .json({ error: "Email has already been verified, Login to continue" });
+  }
+
+  //create token to store in database and send to email as params
+  let token = new Token({
+    token: crypto.randomBytes(16).toString("hex"),
+    userId: user._id,
+  });
+  token = await token.save();
+  if (!token) {
+    return res.status(400).json({ error: "Something went wrong" });
+  }
+  //send email
+  sendEmail({
+    from: "no-reply@ecommerce.com",
+    to: user.email,
+    subject: "Email Verification Link",
+    text: `Hello, \n \n Please confirm your email by copying the below link :\n\n 
+  http:\/\/${req.headers.host}\/api\/confirmation\/${token.token}`,
+  });
+  res.json({
+    message: "Account verification link has been sent to your email",
+  });
+};
+
 // For authorization
 exports.requireSignIn = expressJwt({
   secret: process.env.JWT_SECRET,
