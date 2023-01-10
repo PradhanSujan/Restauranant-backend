@@ -5,7 +5,7 @@ const expressValidator = require("express-validator");
 const cookieParser  = require("cookie-parser");
 require("dotenv").config()
 
-const authRoute = require("./src/routes/authentication.route")
+const authRoute = require("./src/routes/authentication.route");
 
 const app = express();
 
