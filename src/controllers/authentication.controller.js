@@ -8,10 +8,13 @@ const expressJwt = require("express-jwt");
 // Register User and Send email Confirmation link
 
 exports.userRegistration = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, confirmPassword } = req.body;
   const emailExist = await User.findOne({ email }, null, { strictQuery: true });
   if (emailExist) {
     return res.status(400).json({ error: "Email already exists" });
+  }else if(password != confirmPassword){
+    return res.status(400).json({error:"password are not matched"});
+
   }
   let newUser = new User({
     name,
@@ -125,7 +128,7 @@ exports.userSignIn = async (req, res) => {
     return res.json({
       signInToken,
       user: {
-        name,
+        password,
         email,
         _id,
         role,
